@@ -1,0 +1,95 @@
+# Honda WN7 — Home Assistant package
+#
+# Consumes the MQTT topics published by a WiCAN device configured as described
+# in wican/manual-autopid-config.md (topics wican/honda_wn7/...).
+# Adjust the topic prefix if you chose a different one.
+#
+# Install: copy into <config>/packages/ and enable packages in configuration.yaml:
+#   homeassistant:
+#     packages: !include_dir_named packages
+
+mqtt:
+  sensor:
+    # Raw SOC as published by WiCAN. Only updates while the bike is awake
+    # (ignition on or charging); expire_after marks it unavailable once the
+    # bike has gone to sleep.
+    - name: "Honda WN7 SOC raw"
+      unique_id: honda_wn7_soc_raw
+      state_topic: "wican/honda_wn7/soc"
+      value_template: "{{ value_json.soc }}"
+      unit_of_measurement: "%"
+      state_class: measurement
+      expire_after: 600
+
+    - name: "Honda WN7 odometer raw"
+      unique_id: honda_wn7_odometer_raw
+      state_topic: "wican/honda_wn7/odometer"
+      value_template: "{{ value_json.odometer }}"
+      unit_of_measurement: "km"
+      state_class: total_increasing
+      expire_after: 600
+
+    # Optional third PID (experimental temperature byte, see docs).
+    - name: "Honda WN7 temperature byte"
+      unique_id: honda_wn7_temp_byte
+      state_topic: "wican/honda_wn7/temp_raw"
+      value_template: "{{ value_json.temp_raw }}"
+      expire_after: 90
+
+template:
+  - sensor:
+      # Cleaned SOC: rejects transient garbage that can appear while the WiCAN
+      # reboots mid-poll (0 or > 100.5) and caps at 100. All downstream
+      # consumers (dashboards, automations) should use this sensor so future
+      # calibration tweaks only need to touch this one template.
+      - name: "Honda WN7 SOC"
+        unique_id: honda_wn7_soc
+        unit_of_measurement: "%"
+        device_class: battery
+        state_class: measurement
+        availability: >-
+          {{ states('sensor.honda_wn7_soc_raw') | is_number
+             and 0 < states('sensor.honda_wn7_soc_raw') | float(-1)
+             and states('sensor.honda_wn7_soc_raw') | float(-1) <= 100.5 }}
+        state: >-
+          {{ [states('sensor.honda_wn7_soc_raw') | float(0), 100] | min | round(1) }}
+
+      # Cleaned odometer: a reboot mid-poll can yield 0xFFFF garbage that shows
+      # up as 6553.5 km jumps — reject anything at or above that plateau.
+      - name: "Honda WN7 odometer"
+        unique_id: honda_wn7_odometer
+        unit_of_measurement: "km"
+        device_class: distance
+        state_class: total_increasing
+        availability: >-
+          {{ states('sensor.honda_wn7_odometer_raw') | is_number
+             and 0 < states('sensor.honda_wn7_odometer_raw') | float(-1)
+             and states('sensor.honda_wn7_odometer_raw') | float(9999) < 6553 }}
+        state: >-
+          {{ states('sensor.honda_wn7_odometer_raw') | float(0) | round(1) }}
+
+      # Range estimate. 1.4 km per SOC-% was measured empirically on a 2026 WN7
+      # (120 km ride consuming 85 %, matches the ~140 km factory figure).
+      # The on-board display range is unreliable. Adjust the factor to your
+      # riding style / season.
+      - name: "Honda WN7 range"
+        unique_id: honda_wn7_range
+        unit_of_measurement: "km"
+        device_class: distance
+        state_class: measurement
+        availability: >-
+          {{ states('sensor.honda_wn7_soc') | is_number }}
+        state: >-
+          {{ (states('sensor.honda_wn7_soc') | float(0) * 1.4) | round(0) }}
+
+      # EXPERIMENTAL: battery/charger temperature derived from the CF03 byte
+      # (standard OBD −40 offset). See docs/obd-protocol.md before trusting it.
+      - name: "Honda WN7 battery temperature"
+        unique_id: honda_wn7_battery_temperature
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        availability: >-
+          {{ states('sensor.honda_wn7_temp_byte') | is_number }}
+        state: >-
+          {{ states('sensor.honda_wn7_temp_byte') | float(0) - 40 }}
