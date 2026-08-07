@@ -36,7 +36,8 @@ Two options:
 
 - **Vehicle profile** — if "Honda: WN7" is available in your firmware's
   vehicle-profile list, select it and enable Home Assistant discovery. The
-  profile source is in [`wican/honda_wn7.json`](wican/honda_wn7.json).
+  profile source is in [`wican/honda_wn7.json`](wican/honda_wn7.json)
+  (submitted upstream in [meatpiHQ/wican-fw#872](https://github.com/meatpiHQ/wican-fw/pull/872)).
 - **Manual AutoPID config** — follow
   [`wican/manual-autopid-config.md`](wican/manual-autopid-config.md)
   (also covers the experimental temperature PID and the firmware traps —
