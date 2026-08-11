@@ -8,14 +8,20 @@ MQTT. No cloud, no app — the data comes straight off the bike's CAN bus.
 
 | Sensor | Source | Status |
 |---|---|---|
-| State of charge (%) | BMS (`0xD4`, DID `A870`) | ✅ verified 15–100 %, ±2.5 % vs. display |
+| State of charge (%, BMS + as displayed) | BMU (`0xD4` `A870`), cluster (`0xDE` `CFA2`) | ✅ verified vs. official diagnostic tool |
 | Odometer (km) | Cluster (`0xDE`, DID `F012`) | ✅ verified, 0.1 km resolution |
+| Pack voltage / current (V, signed A) | BMU (`0xD4`, DID `A870`) | ✅ verified; current sign under charge pending |
+| Cell temperature, cell voltages min/max | BMU + cluster | ✅ verified |
+| Battery SOH (%) | BMU (`0xD4`, DID `A870`) | ✅ verified |
+| Charge cable connected | PCU (`0xCB`, DID `DB00`) | ✅ verified (plugged/unplugged) |
+| Ambient + charge-port temperature (°C) | Cluster (`0xDE`, `CFA1`/`CFA2`) | ✅ verified |
 | Range estimate (km) | derived (SOC × 1.4) | ✅ empirical |
-| Battery temperature (°C) | Charger (`0xD0`, DID `CF03`) | 🧪 experimental |
 
 Everything here was reverse-engineered on a single 2026 EU-market WN7 — nothing
-in this repo is official. See the [protocol notes](docs/obd-protocol.md) for
-how the values were derived and verified.
+in this repo is official. Byte positions were cross-checked against a passive
+capture of **Honda's official MCS diagnostic tool** and its full-system report.
+See the [protocol notes](docs/obd-protocol.md) for how the values were derived
+and verified.
 
 ## Hardware
 
@@ -60,9 +66,13 @@ ones (garbage filtering, SOC cap, range estimate).
 - **SOC staleness after a ride:** if the bike sleeps immediately after a trip,
   the dashboard keeps the pre-trip SOC until the next wake window. The BMS
   value itself is accurate under load.
-- **Charging state:** there is no usable charging flag on the diagnostic side
-  (the obvious candidate turned out to be a temperature). If you charge from a
-  connected wallbox, derive charging state from the wallbox integration.
+- **Actively-charging state is partially decoded:** cable connected/unplugged
+  is a clean flag (`0xCB DB00`), and the signed pack current goes negative
+  while charging — but what the flag reports *during* an active session is
+  not yet confirmed on this bike. If you charge from a connected wallbox, its
+  integration remains the most reliable charging-state source.
+- **Charge limit (max SOC) not yet located** — candidates identified, see the
+  protocol notes.
 
 ## Repo layout
 
@@ -76,10 +86,10 @@ docs/roadsync-ble.md            why the RoadSync BLE app is a telemetry dead end
 
 ## Contributing
 
-Data points from other WN7s are very welcome — especially SOC field ↔ display
-pairs (mid-range 40–70 % is thin), temperature-byte observations, and anything
-from other markets/model years. Open an issue with raw values and what the
-display showed.
+Data points from other WN7s are very welcome — especially the `plug` value and
+pack current **during an active charging session**, anything on the charge
+limit (max SOC) setting, and observations from other markets/model years. Open
+an issue with raw values and what the display showed.
 
 ## Disclaimer
 

@@ -3,7 +3,9 @@
 Use this if you prefer manual MQTT topics over the vehicle profile / HA discovery,
 or if the Honda WN7 profile is not yet available in your firmware's profile list.
 
-Tested on WiCAN firmware **v4.21** with a 2026 Honda WN7.
+Tested on WiCAN firmware **v4.21** with a 2026 Honda WN7. All byte positions were
+verified against Honda's official MCS diagnostic tool (passive capture + report
+matching) — see [docs/obd-protocol.md](../docs/obd-protocol.md).
 
 > ⚠️ **Configure ONLY through the web UI (Automate tab).** Do not POST raw JSON to
 > `/store_config` / `/store_auto_data`: the firmware parses all config values as
@@ -13,6 +15,10 @@ Tested on WiCAN firmware **v4.21** with a 2026 Honda WN7.
 
 > ⚠️ **New or changed PIDs only take effect after a device reboot** (System tab).
 > "Store" + "Submit" alone is not enough — the AutoPID task loads its list at boot.
+
+> ⚠️ **Expression syntax trap:** the bracket syntax only accepts *ranges*.
+> `[B14]` is silently invalid (no value is ever published). For a single byte
+> write `[B14:B14]` or the bare form `B14`.
 
 ## Global settings
 
@@ -26,64 +32,50 @@ Tested on WiCAN firmware **v4.21** with a 2026 Honda WN7.
 
 Protocol: `auto_pid`. MQTT must be enabled and pointed at your broker.
 
-## PID 1 — State of charge (ECU 0xD4 = BMS)
+## PID list
 
-| Field | Value |
-|---|---|
-| Name | `soc` |
-| Init | `ATSHDAD4F1;` |
-| PID | `22A8709` |
-| Expression | `[B59:B60]*0.11266+2.457` |
-| Period | 10000 |
-| Type | MQTT_Topic |
-| Send_to | `wican/honda_wn7/soc` |
+Type is always `MQTT_Topic`, topic `wican/honda_wn7/<name>`. Pick the subset you
+care about — every entry is polled on its own period, so more entries means more
+bus traffic (all of these together are still fine).
 
-The trailing `9` in the PID is the expected-frame count (`22 A870` + "expect 9
-frames"). The response is a 56-byte block; bytes 47–48 of the payload hold a
-remaining-energy field that maps linearly to the displayed SOC (see
-[docs/obd-protocol.md](../docs/obd-protocol.md) for the calibration data).
+| Name | Init | PID | Expression | Period | Value |
+|---|---|---|---|---|---|
+| `soc` | `ATSHDAD4F1;` | `22A8709` | `[B52:B53]*0.01` | 10000 | BMS "In-Fact" SOC, % |
+| `pack_v` | `ATSHDAD4F1;` | `22A8709` | `[B19:B20]*0.1` | 10000 | pack voltage, V (~392 nominal) |
+| `pack_i` | `ATSHDAD4F1;` | `22A8709` | `[B21:B22]` | 10000 | pack current, **raw** — see note |
+| `batt_temp` | `ATSHDAD4F1;` | `22A8709` | `B47-40` | 30000 | max cell temperature, °C |
+| `soh` | `ATSHDAD4F1;` | `22A8709` | `B61` | 60000 | battery SOH, % |
+| `odometer` | `ATSHDADEF1;` | `22F0122` | `[B6:B7]*6553.6+[B9:B10]*0.1` | 30000 | odometer, km |
+| `soc_disp` | `ATSHDADEF1;` | `22CFA29` | `B39` | 20000 | SOC exactly as the TFT shows it, integer % |
+| `ambient` | `ATSHDADEF1;` | `22CFA29` | `B26` | 60000 | ambient temperature, °C (no offset) |
+| `cell_max` | `ATSHDADEF1;` | `22CFA29` | `[B41:B42]/5` | 60000 | highest cell voltage, mV |
+| `cell_min` | `ATSHDADEF1;` | `22CFA29` | `[B43:B44]/5` | 60000 | lowest cell voltage, mV |
+| `port_temp` | `ATSHDADEF1;` | `22CFA19` | `B26-40` | 60000 | AC charge-port temperature, °C |
+| `plug` | `ATSHDACBF1;` | `22DB009` | `B15` | 10000 | `1` = no cable, `3` = cable plugged in |
 
-## PID 2 — Odometer (ECU 0xDE = meter/cluster)
+Notes:
 
-| Field | Value |
-|---|---|
-| Name | `odometer` |
-| Init | `ATSHDADEF1;` |
-| PID | `22F0122` |
-| Expression | `[B6:B7]*6553.6+[B9:B10]*0.1` |
-| Period | 30000 |
-| Type | MQTT_Topic |
-| Send_to | `wican/honda_wn7/odometer` |
-
-32-bit value, 0.1 km resolution. The two-range expression is needed because the
-value spans a first frame / consecutive frame boundary (ISO-TP PCI bytes are
-part of WiCAN's byte indexing — see protocol doc).
-
-## PID 3 — Battery/charger temperature (ECU 0xD0) — EXPERIMENTAL
-
-| Field | Value |
-|---|---|
-| Name | `temp_raw` |
-| Init | `ATSHDAD0F1;` |
-| PID | `22CF039` |
-| Expression | `[B14:B14]` |
-| Period | 15000 |
-| Type | MQTT_Topic |
-| Send_to | `wican/honda_wn7/temp_raw` |
-
-Temperature in °C is `value − 40` (standard OBD offset). The interpretation as a
-temperature fits all observations so far (cold morning ≈ 25 °C, after ride +
-charge ≈ 46–49 °C) but has not been fully cross-verified — treat as experimental.
-It is **not** a charging flag (an earlier hypothesis, disproven).
-
-> ⚠️ **Expression syntax trap:** the bracket syntax only accepts *ranges*.
-> `[B14]` is silently invalid (no value is ever published). For a single byte
-> write `[B14:B14]` or the bare form `B14`.
+- **`soc` vs `soc_disp`:** `soc` is the BMS's own SOC with 0.01 % resolution;
+  `soc_disp` is the integer the cluster renders. They track each other within
+  ~1 %. An older approach calibrated a remaining-energy field
+  (`[B59:B60]*0.11266+2.457`) against the display — it drifts in the midrange,
+  prefer the direct fields.
+- **`pack_i` is a signed 16-bit value** published raw here (values near 65535
+  = small negative currents; negative = charging). Convert downstream:
+  `value > 32767 ? (value - 65536)/10 : value/10` A — the HA package does this.
+  (Newer firmwares also accept signed-byte syntax `((S21*256)+B22)*0.1`
+  directly in the expression; the raw variant works everywhere.)
+- **`plug`** is verified for `1`/`3` (unplugged / plugged). What it reports
+  *during* an active charge is not yet confirmed — treat `>= 3` as "connected".
+- The odometer expression is split in two ranges because the value spans an
+  ISO-TP frame boundary (PCI bytes are part of WiCAN's byte indexing — see the
+  protocol doc).
 
 ## Verification
 
 - `http://<wican-ip>/autopid_data` shows the last polled values, e.g.
-  `{"soc":89.32,"odometer":193.2,"temp_raw":65}`.
-- Compare SOC against the TFT display (should match within ~±2.5 %).
+  `{"soc":85.13,"soc_disp":85,"odometer":465.8,"pack_v":392.5,...}`.
+- Compare `soc_disp` against the TFT display — it should match exactly;
+  `soc` should be within ~1 %.
 - The bike must be awake (ignition on or actively charging) — when it sleeps,
   the whole CAN bus and 12 V supply are cut within ~4 s and WiCAN goes offline.

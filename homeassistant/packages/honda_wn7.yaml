@@ -2,22 +2,36 @@
 #
 # Consumes the MQTT topics published by a WiCAN device configured as described
 # in wican/manual-autopid-config.md (topics wican/honda_wn7/...).
-# Adjust the topic prefix if you chose a different one.
+# Adjust the topic prefix if you chose a different one, and delete the sensors
+# for PIDs you did not configure.
 #
 # Install: copy into <config>/packages/ and enable packages in configuration.yaml:
 #   homeassistant:
 #     packages: !include_dir_named packages
+#
+# All raw sensors only update while the bike is awake (ignition on or
+# charging); expire_after marks them unavailable once the bike has gone to
+# sleep. If you want values that survive sleep phases, mirror the cleaned
+# sensors into input_number helpers with a small automation.
 
 mqtt:
   sensor:
-    # Raw SOC as published by WiCAN. Only updates while the bike is awake
-    # (ignition on or charging); expire_after marks it unavailable once the
-    # bike has gone to sleep.
+    # BMS "In-Fact" SOC (0.01 % resolution).
     - name: "Honda WN7 SOC raw"
       unique_id: honda_wn7_soc_raw
       state_topic: "wican/honda_wn7/soc"
       value_template: "{{ value_json.soc }}"
       unit_of_measurement: "%"
+      state_class: measurement
+      expire_after: 600
+
+    # SOC exactly as the TFT displays it (integer).
+    - name: "Honda WN7 SOC displayed"
+      unique_id: honda_wn7_soc_displayed
+      state_topic: "wican/honda_wn7/soc_disp"
+      value_template: "{{ value_json.soc_disp }}"
+      unit_of_measurement: "%"
+      device_class: battery
       state_class: measurement
       expire_after: 600
 
@@ -29,19 +43,93 @@ mqtt:
       state_class: total_increasing
       expire_after: 600
 
-    # Optional third PID (experimental temperature byte, see docs).
-    - name: "Honda WN7 temperature byte"
-      unique_id: honda_wn7_temp_byte
-      state_topic: "wican/honda_wn7/temp_raw"
-      value_template: "{{ value_json.temp_raw }}"
-      expire_after: 90
+    - name: "Honda WN7 pack voltage"
+      unique_id: honda_wn7_pack_voltage
+      state_topic: "wican/honda_wn7/pack_v"
+      value_template: "{{ value_json.pack_v }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      expire_after: 120
+
+    # Raw unsigned 16-bit pack current — converted to signed amps by the
+    # template sensor below.
+    - name: "Honda WN7 pack current raw"
+      unique_id: honda_wn7_pack_current_raw
+      state_topic: "wican/honda_wn7/pack_i"
+      value_template: "{{ value_json.pack_i }}"
+      state_class: measurement
+      expire_after: 120
+
+    # Max cell temperature (already offset-corrected by the WiCAN expression).
+    - name: "Honda WN7 cell temperature"
+      unique_id: honda_wn7_cell_temperature
+      state_topic: "wican/honda_wn7/batt_temp"
+      value_template: "{{ value_json.batt_temp }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      expire_after: 300
+
+    - name: "Honda WN7 battery SOH"
+      unique_id: honda_wn7_battery_soh
+      state_topic: "wican/honda_wn7/soh"
+      value_template: "{{ value_json.soh }}"
+      unit_of_measurement: "%"
+      state_class: measurement
+      expire_after: 600
+
+    - name: "Honda WN7 ambient temperature"
+      unique_id: honda_wn7_ambient_temperature
+      state_topic: "wican/honda_wn7/ambient"
+      value_template: "{{ value_json.ambient }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      expire_after: 300
+
+    - name: "Honda WN7 cell voltage max"
+      unique_id: honda_wn7_cell_voltage_max
+      state_topic: "wican/honda_wn7/cell_max"
+      value_template: "{{ value_json.cell_max }}"
+      unit_of_measurement: "mV"
+      device_class: voltage
+      state_class: measurement
+      expire_after: 300
+
+    - name: "Honda WN7 cell voltage min"
+      unique_id: honda_wn7_cell_voltage_min
+      state_topic: "wican/honda_wn7/cell_min"
+      value_template: "{{ value_json.cell_min }}"
+      unit_of_measurement: "mV"
+      device_class: voltage
+      state_class: measurement
+      expire_after: 300
+
+    - name: "Honda WN7 charge port temperature"
+      unique_id: honda_wn7_charge_port_temperature
+      state_topic: "wican/honda_wn7/port_temp"
+      value_template: "{{ value_json.port_temp }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      expire_after: 300
+
+  binary_sensor:
+    # 1 = no cable, 3 = cable plugged in (values during an active charge are
+    # not yet confirmed — >= 3 is treated as "connected").
+    - name: "Honda WN7 charge cable"
+      unique_id: honda_wn7_charge_cable
+      state_topic: "wican/honda_wn7/plug"
+      value_template: "{{ 'ON' if value_json.plug | int(0) >= 3 else 'OFF' }}"
+      device_class: plug
+      expire_after: 120
 
 template:
   - sensor:
       # Cleaned SOC: rejects transient garbage that can appear while the WiCAN
       # reboots mid-poll (0 or > 100.5) and caps at 100. All downstream
-      # consumers (dashboards, automations) should use this sensor so future
-      # calibration tweaks only need to touch this one template.
+      # consumers (dashboards, automations) should use this sensor.
       - name: "Honda WN7 SOC"
         unique_id: honda_wn7_soc
         unit_of_measurement: "%"
@@ -68,6 +156,19 @@ template:
         state: >-
           {{ states('sensor.honda_wn7_odometer_raw') | float(0) | round(1) }}
 
+      # Signed pack current in amps. Negative = current flowing INTO the pack
+      # (charging / regen), positive = discharging.
+      - name: "Honda WN7 pack current"
+        unique_id: honda_wn7_pack_current
+        unit_of_measurement: "A"
+        device_class: current
+        state_class: measurement
+        availability: >-
+          {{ states('sensor.honda_wn7_pack_current_raw') | is_number }}
+        state: >-
+          {% set raw = states('sensor.honda_wn7_pack_current_raw') | float(0) %}
+          {{ ((raw - 65536 if raw > 32767 else raw) / 10) | round(1) }}
+
       # Range estimate. 1.4 km per SOC-% was measured empirically on a 2026 WN7
       # (120 km ride consuming 85 %, matches the ~140 km factory figure).
       # The on-board display range is unreliable. Adjust the factor to your
@@ -81,15 +182,3 @@ template:
           {{ states('sensor.honda_wn7_soc') | is_number }}
         state: >-
           {{ (states('sensor.honda_wn7_soc') | float(0) * 1.4) | round(0) }}
-
-      # EXPERIMENTAL: battery/charger temperature derived from the CF03 byte
-      # (standard OBD −40 offset). See docs/obd-protocol.md before trusting it.
-      - name: "Honda WN7 battery temperature"
-        unique_id: honda_wn7_battery_temperature
-        unit_of_measurement: "°C"
-        device_class: temperature
-        state_class: measurement
-        availability: >-
-          {{ states('sensor.honda_wn7_temp_byte') | is_number }}
-        state: >-
-          {{ states('sensor.honda_wn7_temp_byte') | float(0) - 40 }}
