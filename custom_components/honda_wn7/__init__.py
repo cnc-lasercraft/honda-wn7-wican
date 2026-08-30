@@ -8,7 +8,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 
 from .bridge import WN7Bridge
-from .const import CONF_TOPIC_PREFIX, DEFAULT_TOPIC_PREFIX, PLATFORMS
+from .const import (
+    CONF_SCALING,
+    CONF_TOPIC_PREFIX,
+    DEFAULT_SCALING,
+    DEFAULT_TOPIC_PREFIX,
+    PLATFORMS,
+)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -20,6 +26,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass,
         entry.entry_id,
         entry.data.get(CONF_TOPIC_PREFIX, DEFAULT_TOPIC_PREFIX),
+        entry.options.get(
+            CONF_SCALING, entry.data.get(CONF_SCALING, DEFAULT_SCALING)
+        ),
     )
     await bridge.async_start()
     entry.runtime_data = bridge

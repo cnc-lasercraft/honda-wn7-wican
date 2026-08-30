@@ -34,7 +34,7 @@ def _cable_connected(bridge: WN7Bridge) -> bool | None:
     ``0xCB DB00`` byte 9: 1 = no cable, 3 = cable present. The value stays at 3
     during an active charge — there is no separate "charging" code in this byte.
     """
-    value = bridge.get(KEY_PLUG)
+    value = bridge.value(KEY_PLUG)
     if value is None:
         return None
     return value >= 3
@@ -46,7 +46,7 @@ def _charging(bridge: WN7Bridge) -> bool | None:
     ``0xCB DB00`` byte 8: 1 = not charging (whether or not a cable is plugged
     in), 2 = charging.
     """
-    value = bridge.get(KEY_CHARGE_STATE)
+    value = bridge.value(KEY_CHARGE_STATE)
     if value is None:
         return None
     return value >= 2

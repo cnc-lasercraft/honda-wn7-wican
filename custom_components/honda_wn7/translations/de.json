@@ -6,11 +6,13 @@
         "description": "Gib das MQTT-Topic-Präfix an, unter dem dein WiCAN die WN7-PIDs veröffentlicht. Mit der manuellen AutoPID-Konfiguration aus der Dokumentation ist das wican/honda_wn7.",
         "data": {
           "topic_prefix": "MQTT-Topic-Präfix",
-          "range_factor": "Reichweite pro Ladeprozent (km/%)"
+          "range_factor": "Reichweite pro Ladeprozent (km/%)",
+          "scaling": "WiCAN-Ausdrucksform"
         },
         "data_description": {
           "topic_prefix": "Ohne Schrägstrich am Ende und ohne den PID-Namen, z. B. wican/honda_wn7.",
-          "range_factor": "Basis für die Reichweitenschätzung. 1,4 km/% wurden an einer WN7 (2026, EU) gemessen; im Winter oder bei zügiger Fahrweise niedriger ansetzen."
+          "range_factor": "Basis für die Reichweitenschätzung. 1,4 km/% wurden an einer WN7 (2026, EU) gemessen; im Winter oder bei zügiger Fahrweise niedriger ansetzen.",
+          "scaling": "Wie die AutoPID-Ausdrücke auf deinem WiCAN geschrieben sind. «Skaliert» ist die hier dokumentierte Konfiguration; wähle «Rohwerte», wenn deine Ausdrücke nur die Bytes lesen (z. B. [B19:B20] statt [B19:B20]*0.1) und die Umrechnung hier passieren soll."
         }
       }
     },
@@ -26,33 +28,73 @@
       "init": {
         "title": "Honda-WN7-Optionen",
         "data": {
-          "range_factor": "Reichweite pro Ladeprozent (km/%)"
+          "range_factor": "Reichweite pro Ladeprozent (km/%)",
+          "scaling": "WiCAN-Ausdrucksform"
         },
         "data_description": {
-          "range_factor": "Basis für die Reichweitenschätzung. 1,4 km/% wurden an einer WN7 (2026, EU) gemessen; im Winter oder bei zügiger Fahrweise niedriger ansetzen."
+          "range_factor": "Basis für die Reichweitenschätzung. 1,4 km/% wurden an einer WN7 (2026, EU) gemessen; im Winter oder bei zügiger Fahrweise niedriger ansetzen.",
+          "scaling": "Wie die AutoPID-Ausdrücke auf deinem WiCAN geschrieben sind. «Skaliert» ist die hier dokumentierte Konfiguration; wähle «Rohwerte», wenn deine Ausdrücke nur die Bytes lesen (z. B. [B19:B20] statt [B19:B20]*0.1) und die Umrechnung hier passieren soll."
         }
+      }
+    }
+  },
+  "selector": {
+    "scaling": {
+      "options": {
+        "scaled": "Skaliert — Ausdrücke rechnen in V, °C und mV um (wie dokumentiert)",
+        "raw": "Rohwerte — Ausdrücke lesen nur die Register-Bytes"
       }
     }
   },
   "entity": {
     "sensor": {
-      "soc": { "name": "Ladestand" },
-      "soc_displayed": { "name": "Ladestand (Anzeige)" },
-      "odometer": { "name": "Kilometerstand" },
-      "pack_voltage": { "name": "Packspannung" },
-      "pack_current": { "name": "Packstrom" },
-      "battery_power": { "name": "Batterieleistung" },
-      "cell_temperature": { "name": "Batterietemperatur" },
-      "battery_health": { "name": "Batteriezustand" },
-      "ambient_temperature": { "name": "Aussentemperatur" },
-      "charge_port_temperature": { "name": "Ladeanschluss-Temperatur" },
-      "cell_voltage_max": { "name": "Zellspannung Maximum" },
-      "cell_voltage_min": { "name": "Zellspannung Minimum" },
-      "range": { "name": "Reichweite" }
+      "soc": {
+        "name": "Ladestand"
+      },
+      "soc_displayed": {
+        "name": "Ladestand (Anzeige)"
+      },
+      "odometer": {
+        "name": "Kilometerstand"
+      },
+      "pack_voltage": {
+        "name": "Packspannung"
+      },
+      "pack_current": {
+        "name": "Packstrom"
+      },
+      "battery_power": {
+        "name": "Batterieleistung"
+      },
+      "cell_temperature": {
+        "name": "Batterietemperatur"
+      },
+      "battery_health": {
+        "name": "Batteriezustand"
+      },
+      "ambient_temperature": {
+        "name": "Aussentemperatur"
+      },
+      "charge_port_temperature": {
+        "name": "Ladeanschluss-Temperatur"
+      },
+      "cell_voltage_max": {
+        "name": "Zellspannung Maximum"
+      },
+      "cell_voltage_min": {
+        "name": "Zellspannung Minimum"
+      },
+      "range": {
+        "name": "Reichweite"
+      }
     },
     "binary_sensor": {
-      "charge_cable": { "name": "Ladekabel" },
-      "charging": { "name": "Lädt" }
+      "charge_cable": {
+        "name": "Ladekabel"
+      },
+      "charging": {
+        "name": "Lädt"
+      }
     }
   }
 }

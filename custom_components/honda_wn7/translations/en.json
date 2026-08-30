@@ -6,11 +6,13 @@
         "description": "Enter the MQTT topic prefix your WiCAN publishes the WN7 PIDs to. With the manual AutoPID configuration from the documentation this is wican/honda_wn7.",
         "data": {
           "topic_prefix": "MQTT topic prefix",
-          "range_factor": "Range per percent of charge (km/%)"
+          "range_factor": "Range per percent of charge (km/%)",
+          "scaling": "WiCAN expression style"
         },
         "data_description": {
           "topic_prefix": "Without a trailing slash and without the PID name, e.g. wican/honda_wn7.",
-          "range_factor": "Used for the range estimate. 1.4 km/% was measured on a 2026 EU WN7; lower it for winter or spirited riding."
+          "range_factor": "Used for the range estimate. 1.4 km/% was measured on a 2026 EU WN7; lower it for winter or spirited riding.",
+          "scaling": "How the AutoPID expressions on your WiCAN are written. \"Scaled\" is the configuration this integration documents; pick \"raw\" if your expressions only read the bytes (e.g. [B19:B20] instead of [B19:B20]*0.1) and the conversion should happen here."
         }
       }
     },
@@ -26,33 +28,73 @@
       "init": {
         "title": "Honda WN7 options",
         "data": {
-          "range_factor": "Range per percent of charge (km/%)"
+          "range_factor": "Range per percent of charge (km/%)",
+          "scaling": "WiCAN expression style"
         },
         "data_description": {
-          "range_factor": "Used for the range estimate. 1.4 km/% was measured on a 2026 EU WN7; lower it for winter or spirited riding."
+          "range_factor": "Used for the range estimate. 1.4 km/% was measured on a 2026 EU WN7; lower it for winter or spirited riding.",
+          "scaling": "How the AutoPID expressions on your WiCAN are written. \"Scaled\" is the configuration this integration documents; pick \"raw\" if your expressions only read the bytes (e.g. [B19:B20] instead of [B19:B20]*0.1) and the conversion should happen here."
         }
+      }
+    }
+  },
+  "selector": {
+    "scaling": {
+      "options": {
+        "scaled": "Scaled — expressions convert to V, °C and mV (as documented)",
+        "raw": "Raw — expressions only read the register bytes"
       }
     }
   },
   "entity": {
     "sensor": {
-      "soc": { "name": "State of charge" },
-      "soc_displayed": { "name": "State of charge (displayed)" },
-      "odometer": { "name": "Odometer" },
-      "pack_voltage": { "name": "Pack voltage" },
-      "pack_current": { "name": "Pack current" },
-      "battery_power": { "name": "Battery power" },
-      "cell_temperature": { "name": "Battery temperature" },
-      "battery_health": { "name": "Battery health" },
-      "ambient_temperature": { "name": "Ambient temperature" },
-      "charge_port_temperature": { "name": "Charge port temperature" },
-      "cell_voltage_max": { "name": "Cell voltage maximum" },
-      "cell_voltage_min": { "name": "Cell voltage minimum" },
-      "range": { "name": "Range" }
+      "soc": {
+        "name": "State of charge"
+      },
+      "soc_displayed": {
+        "name": "State of charge (displayed)"
+      },
+      "odometer": {
+        "name": "Odometer"
+      },
+      "pack_voltage": {
+        "name": "Pack voltage"
+      },
+      "pack_current": {
+        "name": "Pack current"
+      },
+      "battery_power": {
+        "name": "Battery power"
+      },
+      "cell_temperature": {
+        "name": "Battery temperature"
+      },
+      "battery_health": {
+        "name": "Battery health"
+      },
+      "ambient_temperature": {
+        "name": "Ambient temperature"
+      },
+      "charge_port_temperature": {
+        "name": "Charge port temperature"
+      },
+      "cell_voltage_max": {
+        "name": "Cell voltage maximum"
+      },
+      "cell_voltage_min": {
+        "name": "Cell voltage minimum"
+      },
+      "range": {
+        "name": "Range"
+      }
     },
     "binary_sensor": {
-      "charge_cable": { "name": "Charge cable" },
-      "charging": { "name": "Charging" }
+      "charge_cable": {
+        "name": "Charge cable"
+      },
+      "charging": {
+        "name": "Charging"
+      }
     }
   }
 }

@@ -61,7 +61,7 @@ def _soc(bridge: WN7Bridge) -> float | None:
     above the physical maximum; anything outside 0 < x <= 100.5 is dropped and
     the rest is capped at 100.
     """
-    value = bridge.get(KEY_SOC)
+    value = bridge.value(KEY_SOC)
     if value is None or not 0 < value <= 100.5:
         return None
     return round(min(value, 100.0), 1)
@@ -69,7 +69,7 @@ def _soc(bridge: WN7Bridge) -> float | None:
 
 def _odometer(bridge: WN7Bridge) -> float | None:
     """Return the odometer, rejecting the 6553.5 km plateau of a truncated read."""
-    value = bridge.get(KEY_ODOMETER)
+    value = bridge.value(KEY_ODOMETER)
     if value is None or not 0 < value < 6553:
         return None
     return round(value, 1)
@@ -82,7 +82,7 @@ def _pack_current(bridge: WN7Bridge) -> float | None:
     are negative. Positive means the pack is being discharged (riding),
     negative means current flows into the pack (charging or regen).
     """
-    raw = bridge.get(KEY_PACK_CURRENT)
+    raw = bridge.value(KEY_PACK_CURRENT)
     if raw is None:
         return None
     if raw > 32767:
@@ -92,7 +92,7 @@ def _pack_current(bridge: WN7Bridge) -> float | None:
 
 def _battery_power(bridge: WN7Bridge) -> float | None:
     """Return pack power in watts, positive while discharging."""
-    voltage = bridge.get(KEY_PACK_VOLTAGE)
+    voltage = bridge.value(KEY_PACK_VOLTAGE)
     current = _pack_current(bridge)
     if voltage is None or current is None:
         return None
@@ -103,7 +103,7 @@ def _cell_voltage(key: str) -> Callable[[WN7Bridge], float | None]:
     """Return a reader for a cell voltage published either in mV or in V."""
 
     def _read(bridge: WN7Bridge) -> float | None:
-        value = bridge.get(key)
+        value = bridge.value(key)
         if value is None or value <= 0:
             return None
         # The manual AutoPID config publishes millivolts, the upstream vehicle
@@ -119,7 +119,7 @@ def _plain(key: str) -> Callable[[WN7Bridge], float | None]:
     """Return a reader that passes the published value through unchanged."""
 
     def _read(bridge: WN7Bridge) -> float | None:
-        return bridge.get(key)
+        return bridge.value(key)
 
     return _read
 

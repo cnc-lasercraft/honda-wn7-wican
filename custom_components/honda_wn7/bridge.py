@@ -12,6 +12,8 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect, async_dispatcher_send
 from homeassistant.util import dt as dt_util
 
+from .const import DEFAULT_SCALING, SCALING_RAW, convert_raw
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -31,11 +33,18 @@ class WN7Bridge:
     and configuration — both forms are accepted.
     """
 
-    def __init__(self, hass: HomeAssistant, entry_id: str, topic_prefix: str) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry_id: str,
+        topic_prefix: str,
+        scaling: str = DEFAULT_SCALING,
+    ) -> None:
         """Initialise the bridge."""
         self.hass = hass
         self.entry_id = entry_id
         self.topic_prefix = topic_prefix.rstrip("/")
+        self.scaling = scaling
         self._readings: dict[str, Reading] = {}
         self._unsubscribe: Callable[[], None] | None = None
 
@@ -87,9 +96,21 @@ class WN7Bridge:
 
     @callback
     def get(self, key: str) -> float | None:
-        """Return the last value for a key, or None if nothing was received."""
+        """Return the last value for a key exactly as it was published."""
         reading = self._readings.get(key)
         return None if reading is None else reading.value
+
+    @callback
+    def value(self, key: str) -> float | None:
+        """Return the last value for a key in its physical unit.
+
+        In "raw" mode the WiCAN expression only reads the register, so the
+        conversion to volts, °C or mV happens here instead.
+        """
+        raw = self.get(key)
+        if raw is None or self.scaling != SCALING_RAW:
+            return raw
+        return convert_raw(key, raw)
 
     @callback
     def snapshot(self) -> dict[str, dict[str, float]]:

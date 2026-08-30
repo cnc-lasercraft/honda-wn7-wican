@@ -66,11 +66,13 @@ Install via [HACS](https://hacs.xyz):
 Or manually: copy `custom_components/honda_wn7/` into your `<config>/custom_components/`.
 
 Restart Home Assistant, then **Settings → Devices & Services → Add Integration
-→ Honda WN7**. It asks for the MQTT topic prefix (default `wican/honda_wn7`)
-and the km-per-percent factor for the range estimate, and creates one device
-with all sensors — garbage filtering, signed-current conversion, battery power
-and staleness handling included. The factor can be changed later under
-*Configure*.
+→ Honda WN7**. It asks for the MQTT topic prefix (default `wican/honda_wn7`),
+the km-per-percent factor for the range estimate, and whether your WiCAN
+expressions are *scaled* (as documented above) or *raw* register reads — see
+[both expression styles](wican/manual-autopid-config.md#two-ways-to-write-the-expressions).
+It then creates one device with all sensors: garbage filtering,
+signed-current conversion, battery power and staleness handling included.
+Both settings can be changed later under *Configure*.
 
 Requires the MQTT integration to be set up; nothing has to be added to
 `configuration.yaml`.

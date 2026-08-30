@@ -10,6 +10,15 @@ PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
 
 CONF_TOPIC_PREFIX = "topic_prefix"
 CONF_RANGE_FACTOR = "range_factor"
+CONF_SCALING = "scaling"
+
+# How the WiCAN expressions were written. "scaled" means the AutoPID expression
+# already converts to the physical unit (the configuration this repo
+# documents); "raw" means the expression just reads the bytes and the
+# conversion happens here.
+SCALING_SCALED = "scaled"
+SCALING_RAW = "raw"
+DEFAULT_SCALING = SCALING_SCALED
 
 DEFAULT_NAME = "Honda WN7"
 DEFAULT_TOPIC_PREFIX = "wican/honda_wn7"
@@ -42,3 +51,18 @@ KEY_CHARGE_STATE = "charge_state"
 EXPIRE_FAST = 120
 EXPIRE_MEDIUM = 300
 EXPIRE_SLOW = 600
+
+def convert_raw(key: str, value: float) -> float:
+    """Convert a raw register value to its physical unit.
+
+    Only used in "raw" mode. Everything not handled here reads the same in
+    both modes: the percentages, the odometer, the plug and charge-state
+    enums, and the pack current, which is a raw register either way.
+    """
+    if key == KEY_PACK_VOLTAGE:
+        return value * 0.1
+    if key in (KEY_CELL_TEMP, KEY_PORT_TEMP):
+        return value - 40
+    if key in (KEY_CELL_MAX, KEY_CELL_MIN):
+        return value / 5
+    return value

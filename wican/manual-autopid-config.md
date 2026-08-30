@@ -32,6 +32,22 @@ matching) — see [docs/obd-protocol.md](../docs/obd-protocol.md).
 
 Protocol: `auto_pid`. MQTT must be enabled and pointed at your broker.
 
+## Two ways to write the expressions
+
+The table below scales inside the WiCAN expression, so the MQTT topics carry
+finished values (`pack_v: 392.5`). That is what this document assumes.
+
+You can also write every expression as a bare register read — `[B19:B20]`
+instead of `[B19:B20]*0.1`, `[B47:B47]` instead of `B47-40` — and let the
+Home Assistant integration do the conversion. Set **WiCAN expression style**
+to *raw* when adding the integration in that case. It affects five values
+(`pack_v`, `batt_temp`, `port_temp`, `cell_max`, `cell_min`); everything else
+reads identically either way.
+
+Fewer characters per expression means fewer chances to hit the syntax trap
+above, so the raw form is the safer one to type — the scaled form is nicer if
+you also consume the topics outside Home Assistant.
+
 ## PID list
 
 Type is always `MQTT_Topic`, topic `wican/honda_wn7/<name>`. Pick the subset you

@@ -18,16 +18,28 @@ from homeassistant.helpers import selector
 
 from .const import (
     CONF_RANGE_FACTOR,
+    CONF_SCALING,
     CONF_TOPIC_PREFIX,
     DEFAULT_NAME,
     DEFAULT_RANGE_FACTOR,
+    DEFAULT_SCALING,
     DEFAULT_TOPIC_PREFIX,
     DOMAIN,
+    SCALING_RAW,
+    SCALING_SCALED,
 )
 
 RANGE_FACTOR_SELECTOR = selector.NumberSelector(
     selector.NumberSelectorConfig(
         min=0.1, max=10, step=0.1, mode=selector.NumberSelectorMode.BOX
+    )
+)
+
+SCALING_SELECTOR = selector.SelectSelector(
+    selector.SelectSelectorConfig(
+        options=[SCALING_SCALED, SCALING_RAW],
+        translation_key="scaling",
+        mode=selector.SelectSelectorMode.DROPDOWN,
     )
 )
 
@@ -58,7 +70,8 @@ class HondaWN7ConfigFlow(ConfigFlow, domain=DOMAIN):
                     options={
                         CONF_RANGE_FACTOR: user_input.get(
                             CONF_RANGE_FACTOR, DEFAULT_RANGE_FACTOR
-                        )
+                        ),
+                        CONF_SCALING: user_input.get(CONF_SCALING, DEFAULT_SCALING),
                     },
                 )
 
@@ -75,6 +88,9 @@ class HondaWN7ConfigFlow(ConfigFlow, domain=DOMAIN):
                     vol.Required(
                         CONF_RANGE_FACTOR, default=DEFAULT_RANGE_FACTOR
                     ): RANGE_FACTOR_SELECTOR,
+                    vol.Required(
+                        CONF_SCALING, default=DEFAULT_SCALING
+                    ): SCALING_SELECTOR,
                 }
             ),
             errors=errors,
@@ -97,16 +113,19 @@ class HondaWN7OptionsFlow(OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(data=user_input)
 
-        current = self.config_entry.options.get(
-            CONF_RANGE_FACTOR, DEFAULT_RANGE_FACTOR
-        )
+        options = self.config_entry.options
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
                 {
                     vol.Required(
-                        CONF_RANGE_FACTOR, default=current
-                    ): RANGE_FACTOR_SELECTOR
+                        CONF_RANGE_FACTOR,
+                        default=options.get(CONF_RANGE_FACTOR, DEFAULT_RANGE_FACTOR),
+                    ): RANGE_FACTOR_SELECTOR,
+                    vol.Required(
+                        CONF_SCALING,
+                        default=options.get(CONF_SCALING, DEFAULT_SCALING),
+                    ): SCALING_SELECTOR,
                 }
             ),
         )
