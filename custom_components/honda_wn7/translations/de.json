@@ -78,6 +78,9 @@
       "charge_port_temperature": {
         "name": "Ladeanschluss-Temperatur"
       },
+      "obc_temperature": {
+        "name": "Ladegerät-Temperatur"
+      },
       "cell_voltage_max": {
         "name": "Zellspannung Maximum"
       },

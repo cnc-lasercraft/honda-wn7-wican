@@ -69,6 +69,7 @@ bus traffic (all of these together are still fine).
 | `port_temp` | `ATSHDADEF1;` | `22CFA19` | `[B26:B26]-40` | 60000 | AC charge-port temperature, °C |
 | `plug` | `ATSHDACBF1;` | `22DB009` | `B15` | 10000 | `1` = no cable, `3` = cable plugged in |
 | `charge_state` | `ATSHDACBF1;` | `22DB009` | `B14` | 10000 | `1` = not charging, `2` = charging |
+| `obc_temp` | `ATSHDAD0F1;` | `22CF039` | `[B14:B14]-40` | 60000 | on-board charger temperature, °C |
 
 Notes:
 
@@ -91,6 +92,11 @@ Notes:
 - **Single bytes: prefer the range form.** `[B47:B47]-40` and `B47-40` are
   both accepted, but the range form is the one verified on hardware here and
   it keeps you in the habit that avoids the `[B47]` trap above.
+- **`obc_temp` is a temperature, not a charge flag.** `0xD0` `CF03` byte 8 looked like a
+  charging indicator early on (88 during a charge, 68 while merely awake) — that was a
+  coincidence of warm-after-charging versus cool-morning. Cross-checked against the
+  official diagnostic report it is the on-board charger's temperature. The real
+  charge-active flag is `charge_state` above.
 - The odometer expression is split in two ranges because the value spans an
   ISO-TP frame boundary (PCI bytes are part of WiCAN's byte indexing — see the
   protocol doc).

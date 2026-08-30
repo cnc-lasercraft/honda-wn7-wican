@@ -78,6 +78,9 @@
       "charge_port_temperature": {
         "name": "Charge port temperature"
       },
+      "obc_temperature": {
+        "name": "On-board charger temperature"
+      },
       "cell_voltage_max": {
         "name": "Cell voltage maximum"
       },

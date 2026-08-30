@@ -42,6 +42,7 @@ KEY_AMBIENT = "ambient"
 KEY_CELL_MAX = "cell_max"
 KEY_CELL_MIN = "cell_min"
 KEY_PORT_TEMP = "port_temp"
+KEY_OBC_TEMP = "obc_temp"
 KEY_PLUG = "plug"
 KEY_CHARGE_STATE = "charge_state"
 
@@ -61,7 +62,7 @@ def convert_raw(key: str, value: float) -> float:
     """
     if key == KEY_PACK_VOLTAGE:
         return value * 0.1
-    if key in (KEY_CELL_TEMP, KEY_PORT_TEMP):
+    if key in (KEY_CELL_TEMP, KEY_PORT_TEMP, KEY_OBC_TEMP):
         return value - 40
     if key in (KEY_CELL_MAX, KEY_CELL_MIN):
         return value / 5

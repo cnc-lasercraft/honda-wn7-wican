@@ -19,6 +19,7 @@ MQTT. No cloud, no app — the data comes straight off the bike's CAN bus.
 | Charge cable connected | PCU (`0xCB`, DID `DB00` `B15`) | ✅ verified (plugged/unplugged) |
 | Charging (active) | PCU (`0xCB`, DID `DB00` `B14`) | ✅ verified during an AC session |
 | Ambient + charge-port temperature (°C) | Cluster (`0xDE`, `CFA1`/`CFA2`) | ✅ verified |
+| On-board charger temperature (°C) | OBC (`0xD0`, DID `CF03`) | ✅ verified against the diagnostic report |
 | Range estimate (km) | derived (SOC × configurable km/%) | ✅ empirical |
 
 Everything here was reverse-engineered on a single 2026 EU-market WN7 — nothing
