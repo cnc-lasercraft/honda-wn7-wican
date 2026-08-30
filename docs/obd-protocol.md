@@ -26,7 +26,7 @@ and model years, and verify against your TFT display before trusting any value.
 | `0xD4` | BMU (battery management) | `A870` = live status block; `A820`–`A82A`, `DA5x` = counters; `DA10` = battery serial number |
 | `0xDE` | Meter / instrument cluster | `F012` = odometer; **`CFA1`/`CFA2` = aggregate/display blocks** (displayed SOC, pack V, temperatures); `F802` = VIN (ASCII — PII, be careful with logs) |
 | `0xD0` | OBC (on-board charger) | `CF01`–`CF04` = charge/DCDC block; `CF03` byte 8 = OBC temperature |
-| `0xCB` | PCU / DCDC | **`DB00` = charge-connect block** (plug flag, proximity pilot, 14.7 V DCDC output, temperatures); `E700` |
+| `0xCB` | PCU / DCDC | **`DB00` = charge-connect block** (plug flag, charge-active flag, proximity pilot, 14.7 V DCDC output, temperatures); `E700` |
 | `0x60` | Body/ABS (?) | `7122`, `7128`, `712A` (not decoded) |
 
 ## Byte indexing: UDS payload position → WiCAN buffer index
@@ -98,8 +98,12 @@ WiCAN PIDs: `22CFA29` / `22CFA19` with `ATSHDADEF1;`.
 plugging the AC cable in:
 
 - **`B15` (p9): `1` = no cable, `3` = cable plugged in** — a clean connect
-  flag. (Whether an *actively charging* session uses a further value is still
-  open — see "Open questions".)
+  flag. It stays at `3` during an active charge; there is no separate
+  "charging" code in this byte.
+- **`B14` (p8): `1` = not charging, `2` = charging** — the actual charge-active
+  flag, verified during a real AC session (2026-08). Together the two bytes
+  give the full state: `B15=1` unplugged · `B15=3, B14=1` plugged and idle ·
+  `B15=3, B14=2` charging.
 - **`[B36:B37]` (p27:28): proximity-pilot resistance** — `0xFFFF` with no
   plug, a finite value (~220) with the cable in.
 - p19:20 and p25:26 go `0 → non-zero` with the cable (control-pilot values);
@@ -130,13 +134,17 @@ actively-held session (`10 01` + `3E`) makes ECUs populate them is untested.
 
 ## Open questions
 
-- **Actively-charging state:** `DB00 B15` is verified for `1`/`3`
-  (unplugged/plugged). What it shows *during* an actual charge — and the exact
-  sign convention/magnitude of `A870` pack current under charging load — still
-  needs a capture during a real charging session.
 - **Charge limit (max SOC):** the TFT lets you set one; no explicit field
   found yet. Candidates: `A870` SOCE `B63` and the target DC charging voltage
-  (~403 V). Plan: snapshot before/after changing the limit on the TFT.
+  (~403 V). A full before/after snapshot around a limited session (stopped at
+  ~90 % displayed) showed no register carrying the limit — and the bus plus
+  12 V die essentially *with* the end of charging (UDS dead < 20 s after the
+  last measurement), so the end-of-charge snapshot came back empty. Practical
+  workaround: infer the limit in Home Assistant from "charging ended below
+  100 %" rather than from a register.
+- **Charge-session extras in `DB00`:** p17/p18 go `0 → 1/120` while charging
+  (control-pilot duty / AC current limit?), p23:24 carry further CP values.
+  Not decoded.
 
 ## Negative results (save yourself the time)
 

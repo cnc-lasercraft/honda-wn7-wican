@@ -116,14 +116,22 @@ mqtt:
       expire_after: 300
 
   binary_sensor:
-    # 1 = no cable, 3 = cable plugged in (values during an active charge are
-    # not yet confirmed — >= 3 is treated as "connected").
+    # 1 = no cable, 3 = cable plugged in. Stays at 3 during an active charge —
+    # the charge-active flag is charge_state below.
     - name: "Honda WN7 charge cable"
       unique_id: honda_wn7_charge_cable
       state_topic: "wican/honda_wn7/plug"
       value_template: "{{ 'ON' if value_json.plug | int(0) >= 3 else 'OFF' }}"
       device_class: plug
       expire_after: 120
+
+    # 1 = not charging (even with the cable in), 2 = charging.
+    - name: "Honda WN7 charging"
+      unique_id: honda_wn7_charging
+      state_topic: "wican/honda_wn7/charge_state"
+      value_template: "{{ 'ON' if value_json.charge_state | int(0) >= 2 else 'OFF' }}"
+      device_class: battery_charging
+      expire_after: 600
 
 template:
   - sensor:

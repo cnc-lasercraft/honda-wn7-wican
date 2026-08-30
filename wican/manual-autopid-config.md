@@ -52,6 +52,7 @@ bus traffic (all of these together are still fine).
 | `cell_min` | `ATSHDADEF1;` | `22CFA29` | `[B43:B44]/5` | 60000 | lowest cell voltage, mV |
 | `port_temp` | `ATSHDADEF1;` | `22CFA19` | `B26-40` | 60000 | AC charge-port temperature, °C |
 | `plug` | `ATSHDACBF1;` | `22DB009` | `B15` | 10000 | `1` = no cable, `3` = cable plugged in |
+| `charge_state` | `ATSHDACBF1;` | `22DB009` | `B14` | 10000 | `1` = not charging, `2` = charging |
 
 Notes:
 
@@ -65,8 +66,12 @@ Notes:
   `value > 32767 ? (value - 65536)/10 : value/10` A — the HA package does this.
   (Newer firmwares also accept signed-byte syntax `((S21*256)+B22)*0.1`
   directly in the expression; the raw variant works everywhere.)
-- **`plug`** is verified for `1`/`3` (unplugged / plugged). What it reports
-  *during* an active charge is not yet confirmed — treat `>= 3` as "connected".
+- **`plug` and `charge_state` belong together.** `plug` stays at `3` during an
+  active charge — there is no separate "charging" value in that byte. The
+  charge-active flag is the neighbouring byte `charge_state` (`1` = not
+  charging even with the cable in, `2` = charging), verified during a real AC
+  session. Full state: `plug=1` unplugged · `plug=3, charge_state=1` plugged
+  and idle · `plug=3, charge_state=2` charging.
 - The odometer expression is split in two ranges because the value spans an
   ISO-TP frame boundary (PCI bytes are part of WiCAN's byte indexing — see the
   protocol doc).

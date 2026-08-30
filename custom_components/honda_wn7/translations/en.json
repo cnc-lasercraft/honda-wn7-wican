@@ -1,0 +1,58 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Honda WN7 (WiCAN)",
+        "description": "Enter the MQTT topic prefix your WiCAN publishes the WN7 PIDs to. With the manual AutoPID configuration from the documentation this is wican/honda_wn7.",
+        "data": {
+          "topic_prefix": "MQTT topic prefix",
+          "range_factor": "Range per percent of charge (km/%)"
+        },
+        "data_description": {
+          "topic_prefix": "Without a trailing slash and without the PID name, e.g. wican/honda_wn7.",
+          "range_factor": "Used for the range estimate. 1.4 km/% was measured on a 2026 EU WN7; lower it for winter or spirited riding."
+        }
+      }
+    },
+    "error": {
+      "invalid_topic": "That is not a valid MQTT topic."
+    },
+    "abort": {
+      "already_configured": "This topic prefix is already set up."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Honda WN7 options",
+        "data": {
+          "range_factor": "Range per percent of charge (km/%)"
+        },
+        "data_description": {
+          "range_factor": "Used for the range estimate. 1.4 km/% was measured on a 2026 EU WN7; lower it for winter or spirited riding."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "soc": { "name": "State of charge" },
+      "soc_displayed": { "name": "State of charge (displayed)" },
+      "odometer": { "name": "Odometer" },
+      "pack_voltage": { "name": "Pack voltage" },
+      "pack_current": { "name": "Pack current" },
+      "battery_power": { "name": "Battery power" },
+      "cell_temperature": { "name": "Battery temperature" },
+      "battery_health": { "name": "Battery health" },
+      "ambient_temperature": { "name": "Ambient temperature" },
+      "charge_port_temperature": { "name": "Charge port temperature" },
+      "cell_voltage_max": { "name": "Cell voltage maximum" },
+      "cell_voltage_min": { "name": "Cell voltage minimum" },
+      "range": { "name": "Range" }
+    },
+    "binary_sensor": {
+      "charge_cable": { "name": "Charge cable" },
+      "charging": { "name": "Charging" }
+    }
+  }
+}
