@@ -59,14 +59,14 @@ bus traffic (all of these together are still fine).
 | `soc` | `ATSHDAD4F1;` | `22A8709` | `[B52:B53]*0.01` | 10000 | BMS "In-Fact" SOC, % |
 | `pack_v` | `ATSHDAD4F1;` | `22A8709` | `[B19:B20]*0.1` | 10000 | pack voltage, V (~392 nominal) |
 | `pack_i` | `ATSHDAD4F1;` | `22A8709` | `[B21:B22]` | 10000 | pack current, **raw** — see note |
-| `batt_temp` | `ATSHDAD4F1;` | `22A8709` | `B47-40` | 30000 | max cell temperature, °C |
+| `batt_temp` | `ATSHDAD4F1;` | `22A8709` | `[B47:B47]-40` | 30000 | max cell temperature, °C |
 | `soh` | `ATSHDAD4F1;` | `22A8709` | `B61` | 60000 | battery SOH, % |
 | `odometer` | `ATSHDADEF1;` | `22F0122` | `[B6:B7]*6553.6+[B9:B10]*0.1` | 30000 | odometer, km |
 | `soc_disp` | `ATSHDADEF1;` | `22CFA29` | `B39` | 20000 | SOC exactly as the TFT shows it, integer % |
 | `ambient` | `ATSHDADEF1;` | `22CFA29` | `B26` | 60000 | ambient temperature, °C (no offset) |
 | `cell_max` | `ATSHDADEF1;` | `22CFA29` | `[B41:B42]/5` | 60000 | highest cell voltage, mV |
 | `cell_min` | `ATSHDADEF1;` | `22CFA29` | `[B43:B44]/5` | 60000 | lowest cell voltage, mV |
-| `port_temp` | `ATSHDADEF1;` | `22CFA19` | `B26-40` | 60000 | AC charge-port temperature, °C |
+| `port_temp` | `ATSHDADEF1;` | `22CFA19` | `[B26:B26]-40` | 60000 | AC charge-port temperature, °C |
 | `plug` | `ATSHDACBF1;` | `22DB009` | `B15` | 10000 | `1` = no cable, `3` = cable plugged in |
 | `charge_state` | `ATSHDACBF1;` | `22DB009` | `B14` | 10000 | `1` = not charging, `2` = charging |
 
@@ -88,6 +88,9 @@ Notes:
   charging even with the cable in, `2` = charging), verified during a real AC
   session. Full state: `plug=1` unplugged · `plug=3, charge_state=1` plugged
   and idle · `plug=3, charge_state=2` charging.
+- **Single bytes: prefer the range form.** `[B47:B47]-40` and `B47-40` are
+  both accepted, but the range form is the one verified on hardware here and
+  it keeps you in the habit that avoids the `[B47]` trap above.
 - The odometer expression is split in two ranges because the value spans an
   ISO-TP frame boundary (PCI bytes are part of WiCAN's byte indexing — see the
   protocol doc).
