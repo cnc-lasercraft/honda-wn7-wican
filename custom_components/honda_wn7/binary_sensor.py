@@ -16,7 +16,14 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from .bridge import WN7Bridge
-from .const import EXPIRE_FAST, EXPIRE_SLOW, KEY_CHARGE_STATE, KEY_PLUG, KEY_SOC
+from .const import (
+    EXPIRE_FAST,
+    EXPIRE_SLOW,
+    KEY_CHARGE_STATE,
+    KEY_PLUG,
+    KEY_SOC,
+    KEY_SOC_DISPLAYED,
+)
 from .entity import WN7BaseEntity, WN7Entity
 from .runtime import WN7Runtime
 from .sensor import read_soc
@@ -129,8 +136,10 @@ class WN7PvChargeRequest(WN7BaseEntity, BinarySensorEntity, RestoreEntity):
     Unlike every other entity here this one does not expire with the bike: a
     charge planner asks the question precisely when the WN7 has been plugged in
     and has gone back to sleep, so the last state of charge seen is carried
-    across sleep phases and restarts. It is exposed alongside the target as
-    attributes so a planner can work out the energy still needed:
+    across sleep phases and restarts. The charge is the one the rider sees on
+    the bike (see ``read_soc``), because the limit is read off that same
+    display. It is exposed alongside the target as attributes so a planner can
+    work out the energy still needed:
 
         (charging_limit - state_of_charge) * capacity / 100
     """
@@ -154,7 +163,9 @@ class WN7PvChargeRequest(WN7BaseEntity, BinarySensorEntity, RestoreEntity):
             except (KeyError, TypeError, ValueError):
                 self._soc = None
         self.async_on_remove(
-            self._bridge.async_add_listener((KEY_SOC,), self._handle_update)
+            self._bridge.async_add_listener(
+                (KEY_SOC_DISPLAYED, KEY_SOC), self._handle_update
+            )
         )
         self.async_on_remove(self._target.async_add_listener(self._handle_update))
         # A charge may have arrived before this entity was added.

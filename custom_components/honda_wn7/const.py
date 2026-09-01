@@ -29,7 +29,9 @@ DEFAULT_RANGE_FACTOR = 1.4
 
 # The state of charge the PV charge planning aims for. The WN7 does not expose
 # its own charge limit — the full DID scan documented in PROTOCOL.md came back
-# empty — so the rider sets the target and the number entity remembers it.
+# empty — so the rider sets the target and the number entity remembers it. It
+# is read off the TFT, so it lives on the displayed scale; see read_soc() for
+# why the BMS scale would never reach it.
 DEFAULT_CHARGE_LIMIT = 100.0
 MIN_CHARGE_LIMIT = 50.0
 MAX_CHARGE_LIMIT = 100.0

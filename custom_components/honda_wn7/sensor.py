@@ -55,17 +55,36 @@ class WN7SensorEntityDescription(SensorEntityDescription):
     expire_after: int = EXPIRE_SLOW
 
 
-def read_soc(bridge: WN7Bridge) -> float | None:
-    """Return the BMS SOC, rejecting the garbage a mid-poll reboot can emit.
+def _sane_soc(value: float | None) -> float | None:
+    """Reject the garbage a mid-poll WiCAN reboot can emit.
 
-    A WiCAN restart in the middle of a request yields 0 or a nonsensical value
-    above the physical maximum; anything outside 0 < x <= 100.5 is dropped and
-    the rest is capped at 100.
+    A restart in the middle of a request yields 0 or a nonsensical value above
+    the physical maximum; anything outside 0 < x <= 100.5 is dropped and the
+    rest is capped at 100.
     """
-    value = bridge.value(KEY_SOC)
     if value is None or not 0 < value <= 100.5:
         return None
     return round(min(value, 100.0), 1)
+
+
+def read_soc(bridge: WN7Bridge) -> float | None:
+    """Return the state of charge the rider sees on the bike.
+
+    Two are available and they disagree: ``soc_disp`` is the integer the
+    cluster renders (``0xDE CFA2`` byte 39), ``soc`` is the BMS "in fact"
+    figure with 0.01 % resolution (``0xD4 A870``), and the BMS one runs about
+    1.5 points lower — 87.7 against a displayed 89 in one poll here. The gap
+    matters beyond cosmetics: two charges that stopped at a TFT limit of 90 %
+    ended at 88.3 and 87.7 on the BMS scale, so a target read off the display
+    is never reached on the other scale.
+
+    Preference therefore goes to ``soc_disp``, with the BMS field as the
+    fallback for a WiCAN set up without that PID.
+    """
+    displayed = _sane_soc(bridge.value(KEY_SOC_DISPLAYED))
+    if displayed is not None:
+        return displayed
+    return _sane_soc(bridge.value(KEY_SOC))
 
 
 def _odometer(bridge: WN7Bridge) -> float | None:
@@ -132,8 +151,10 @@ SENSORS: tuple[WN7SensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
-        suggested_display_precision=1,
-        source_keys=(KEY_SOC,),
+        # The displayed field is a whole percent; showing a decimal would
+        # promise a precision the bike does not put on its own screen.
+        suggested_display_precision=0,
+        source_keys=(KEY_SOC_DISPLAYED, KEY_SOC),
         value_fn=read_soc,
     ),
     WN7SensorEntityDescription(

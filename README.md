@@ -93,7 +93,8 @@ or tariff charge planner can reason about the bike:
 - **Charge limit** (`number`) — the state of charge you want the bike charged
   to. A target *you* set, not a value read from the bike: the WN7 does not
   expose its own charge limit (see *Known limitations*), and nothing set here
-  is sent to it.
+  is sent to it. Set it to the figure your TFT shows — the charge request
+  compares against the same displayed scale (see *Which SOC you get* below).
 - **PV charge request** (`binary_sensor`) — on while the bike is below that
   target. It carries `state_of_charge` and `charging_limit` as attributes, so
   a planner can work out the energy still needed:
@@ -115,6 +116,16 @@ need that figure to be current.
 - **SOC staleness after a ride:** if the bike sleeps immediately after a trip,
   the dashboard keeps the pre-trip SOC until the next wake window. The BMS
   value itself is accurate under load.
+- **Which SOC you get:** the bike publishes two that disagree by about 1.5
+  points — `soc_disp` is the whole percent the cluster renders (what the TFT
+  shows), `soc` is the BMS "in fact" figure at 0.01 % resolution (87.7 against
+  a displayed 89 in one poll here). Since v1.4.0 the *State of charge* sensor
+  reports the displayed one, so it agrees with the bike, and falls back to the
+  BMS field if your AutoPID configuration has no `soc_disp` PID. The
+  distinction is not cosmetic: two charges that stopped at a TFT limit of 90 %
+  ended at 88.3 and 87.7 on the BMS scale, so a target read off the TFT is
+  never reached on that scale. The BMS figure itself has no entity of its own;
+  it stays on its MQTT topic and in the diagnostics download.
 - **Charge limit (max SOC) not yet located** — the register was not found even
   during a limited charging session, and bus plus 12 V die essentially *with*
   the end of charging. Infer it from "charging ended below 100 %" instead; see
