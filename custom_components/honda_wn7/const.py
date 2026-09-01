@@ -6,7 +6,7 @@ from homeassistant.const import Platform
 
 DOMAIN = "honda_wn7"
 
-PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SENSOR]
 
 CONF_TOPIC_PREFIX = "topic_prefix"
 CONF_RANGE_FACTOR = "range_factor"
@@ -26,6 +26,13 @@ DEFAULT_TOPIC_PREFIX = "wican/honda_wn7"
 # km per SOC percent. 1.4 was measured on a 2026 EU WN7 (120 km ride consuming
 # 85 %), which matches the ~140 km factory figure.
 DEFAULT_RANGE_FACTOR = 1.4
+
+# The state of charge the PV charge planning aims for. The WN7 does not expose
+# its own charge limit — the full DID scan documented in PROTOCOL.md came back
+# empty — so the rider sets the target and the number entity remembers it.
+DEFAULT_CHARGE_LIMIT = 100.0
+MIN_CHARGE_LIMIT = 50.0
+MAX_CHARGE_LIMIT = 100.0
 
 MANUFACTURER = "Honda"
 MODEL = "WN7"

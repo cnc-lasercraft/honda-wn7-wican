@@ -97,6 +97,14 @@
       },
       "charging": {
         "name": "Charging"
+      },
+      "pv_charge_request": {
+        "name": "PV charge request"
+      }
+    },
+    "number": {
+      "charge_limit": {
+        "name": "Charge limit"
       }
     }
   }

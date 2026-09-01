@@ -55,7 +55,7 @@ class WN7SensorEntityDescription(SensorEntityDescription):
     expire_after: int = EXPIRE_SLOW
 
 
-def _soc(bridge: WN7Bridge) -> float | None:
+def read_soc(bridge: WN7Bridge) -> float | None:
     """Return the BMS SOC, rejecting the garbage a mid-poll reboot can emit.
 
     A WiCAN restart in the middle of a request yields 0 or a nonsensical value
@@ -134,7 +134,7 @@ SENSORS: tuple[WN7SensorEntityDescription, ...] = (
         native_unit_of_measurement=PERCENTAGE,
         suggested_display_precision=1,
         source_keys=(KEY_SOC,),
-        value_fn=_soc,
+        value_fn=read_soc,
     ),
     WN7SensorEntityDescription(
         key="soc_displayed",
@@ -274,7 +274,7 @@ def _range_description(factor: float) -> WN7SensorEntityDescription:
     """Build the range estimate, which depends on the configured km/% factor."""
 
     def _range(bridge: WN7Bridge) -> float | None:
-        soc = _soc(bridge)
+        soc = read_soc(bridge)
         if soc is None:
             return None
         return round(soc * factor)
@@ -297,7 +297,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the Honda WN7 sensors."""
-    bridge: WN7Bridge = entry.runtime_data
+    bridge: WN7Bridge = entry.runtime_data.bridge
     factor = entry.options.get(
         CONF_RANGE_FACTOR, entry.data.get(CONF_RANGE_FACTOR, DEFAULT_RANGE_FACTOR)
     )

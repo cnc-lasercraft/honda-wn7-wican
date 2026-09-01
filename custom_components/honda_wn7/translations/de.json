@@ -97,6 +97,14 @@
       },
       "charging": {
         "name": "Lädt"
+      },
+      "pv_charge_request": {
+        "name": "PV Ladewunsch"
+      }
+    },
+    "number": {
+      "charge_limit": {
+        "name": "Ladelimit"
       }
     }
   }

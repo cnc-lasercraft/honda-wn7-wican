@@ -12,17 +12,31 @@ from .bridge import WN7Bridge
 from .const import DEFAULT_NAME, DOMAIN, MANUFACTURER, MODEL
 
 
-class WN7Entity(Entity):
-    """Common behaviour for all Honda WN7 entities.
+class WN7BaseEntity(Entity):
+    """The device identity every Honda WN7 entity shares."""
+
+    _attr_has_entity_name = True
+    _attr_should_poll = False
+
+    def __init__(self, entry: ConfigEntry, key: str) -> None:
+        """Initialise the entity."""
+        self._attr_unique_id = f"{entry.entry_id}_{key}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name=entry.title or DEFAULT_NAME,
+            manufacturer=MANUFACTURER,
+            model=MODEL,
+        )
+
+
+class WN7Entity(WN7BaseEntity):
+    """An entity reading values the bike publishes while it is awake.
 
     Values only arrive while the bike is awake — ignition on or charging. A few
     seconds after key-off the CAN bus and the 12 V supply are cut and the WiCAN
     goes offline, so every entity expires on its own schedule and then reports
     unavailable instead of freezing at a stale value.
     """
-
-    _attr_has_entity_name = True
-    _attr_should_poll = False
 
     def __init__(
         self,
@@ -33,17 +47,11 @@ class WN7Entity(Entity):
         expire_after: int,
     ) -> None:
         """Initialise the entity."""
+        super().__init__(entry, key)
         self._bridge = bridge
         self._source_keys = source_keys
         self._expire_after = expire_after
         self._expiration_cancel: CALLBACK_TYPE | None = None
-        self._attr_unique_id = f"{entry.entry_id}_{key}"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, entry.entry_id)},
-            name=entry.title or DEFAULT_NAME,
-            manufacturer=MANUFACTURER,
-            model=MODEL,
-        )
 
     async def async_added_to_hass(self) -> None:
         """Subscribe to updates for the keys this entity is built from."""

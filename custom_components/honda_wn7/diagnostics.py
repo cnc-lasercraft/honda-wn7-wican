@@ -18,9 +18,10 @@ async def async_get_config_entry_diagnostics(
     Useful when reporting decoding findings from another WN7 — nothing here is
     personal, the values are the bike's own telemetry.
     """
-    bridge: WN7Bridge = entry.runtime_data
+    bridge: WN7Bridge = entry.runtime_data.bridge
     return {
         "topic_prefix": bridge.topic_prefix,
         "options": dict(entry.options),
+        "charge_limit": entry.runtime_data.charge_target.limit,
         "readings": bridge.snapshot(),
     }

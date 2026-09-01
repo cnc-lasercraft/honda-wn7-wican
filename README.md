@@ -85,6 +85,26 @@ If you would rather not run a custom integration, copy
 into `<config>/packages/` (enable packages first) and restart. Same sensors,
 built from `mqtt:` and `template:` entries. Do not run both at once.
 
+### 3. Charge planning (optional)
+
+The integration adds two entities that are not telemetry but exist so a solar
+or tariff charge planner can reason about the bike:
+
+- **Charge limit** (`number`) — the state of charge you want the bike charged
+  to. A target *you* set, not a value read from the bike: the WN7 does not
+  expose its own charge limit (see *Known limitations*), and nothing set here
+  is sent to it.
+- **PV charge request** (`binary_sensor`) — on while the bike is below that
+  target. It carries `state_of_charge` and `charging_limit` as attributes, so
+  a planner can work out the energy still needed:
+  `(charging_limit - state_of_charge) * 9 kWh / 100`.
+
+Unlike the telemetry entities the charge request does *not* go `unavailable`
+when the bike sleeps: it keeps the last state of charge it saw, across restarts
+too, because a planner asks exactly when a plugged-in bike has gone back to
+sleep. Wake the bike (ignition on for ~30 s, or a brief charge pulse) if you
+need that figure to be current.
+
 ## Known limitations
 
 - **Trip meters A/B cannot be read** — they only exist inside the cluster.
@@ -98,7 +118,8 @@ built from `mqtt:` and `template:` entries. Do not run both at once.
 - **Charge limit (max SOC) not yet located** — the register was not found even
   during a limited charging session, and bus plus 12 V die essentially *with*
   the end of charging. Infer it from "charging ended below 100 %" instead; see
-  the protocol notes.
+  the protocol notes. For charge planning, set the target yourself with the
+  *Charge limit* number entity above.
 
 ## Repo layout
 

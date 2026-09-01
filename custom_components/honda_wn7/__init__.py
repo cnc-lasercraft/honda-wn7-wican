@@ -11,10 +11,12 @@ from .bridge import WN7Bridge
 from .const import (
     CONF_SCALING,
     CONF_TOPIC_PREFIX,
+    DEFAULT_CHARGE_LIMIT,
     DEFAULT_SCALING,
     DEFAULT_TOPIC_PREFIX,
     PLATFORMS,
 )
+from .runtime import WN7ChargeTarget, WN7Runtime
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -31,7 +33,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ),
     )
     await bridge.async_start()
-    entry.runtime_data = bridge
+    entry.runtime_data = WN7Runtime(
+        bridge=bridge,
+        charge_target=WN7ChargeTarget(hass, entry.entry_id, DEFAULT_CHARGE_LIMIT),
+    )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
@@ -42,8 +47,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
-        bridge: WN7Bridge = entry.runtime_data
-        bridge.async_stop()
+        runtime: WN7Runtime = entry.runtime_data
+        runtime.bridge.async_stop()
     return unload_ok
 
 
